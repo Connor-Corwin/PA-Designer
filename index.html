@@ -12,90 +12,119 @@
 </head>
 <body>
 <div class="app">
-  <aside class="rack" aria-label="System controls">
+  <aside class="rack" aria-label="Controls">
     <div class="brand">
-      <h1>PA Designer</h1>
+      <div class="brandrow"><h1>PA Designer</h1><button id="undoBtn" disabled title="Undo the last big change">Undo</button></div>
+      <input id="projName" class="projname" aria-label="Project name" value="Untitled design">
       <p id="roomDesc"></p>
     </div>
 
-    <section class="grp">
-      <h2>Preset</h2>
-      <select id="preset" aria-label="Preset">
-        <option value="rec">3 Focus + 1 Wide (70° / 70° / 110° / 110°)</option>
-        <option value="all110">3 Focus + 1 Wide, all 110°</option>
-        <option value="all70">3 Focus + 1 Wide, all 70°</option>
-        <option value="asym">3 Focus 90° asym (wide side in) + Wide 110°</option>
-        <option value="ff2w2">2 Focus + 2 Wide (70° / 70° / 110° / 110°)</option>
-        <option value="custom" hidden>Custom</option>
-      </select>
-      <div class="actions">
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="room" aria-selected="false">Room</button>
+      <button role="tab" data-tab="sys" aria-selected="true">System</button>
+      <button role="tab" data-tab="an" aria-selected="false">Analyze</button>
+      <button role="tab" data-tab="file" aria-selected="false">File</button>
+    </nav>
+
+    <!-- ROOM -->
+    <div class="pane" id="pane-room" role="tabpanel" hidden>
+      <section class="grp">
+        <h2>Start from</h2>
+        <select id="roomPreset" aria-label="Room preset"></select>
+        <button id="loadRoom">Load room with a starter system</button>
+        <p class="note">Loading a room replaces the speakers with a starter system sized for it. Undo brings the old design back.</p>
+      </section>
+      <div id="roomCtl"></div>
+    </div>
+
+    <!-- SYSTEM -->
+    <div class="pane" id="pane-sys" role="tabpanel">
+      <section class="grp">
         <button id="optBtn" class="primary">Optimize coverage</button>
-        <button id="resetBtn">Reset all</button>
-      </div>
-      <label class="row">Optimize for <select id="optGoal" aria-label="Optimize goal"><option value="even" selected>Even level, front to back</option><option value="even_lean">Even, back rows 1–2 dB lower</option></select></label>
-      <p class="note" id="optNote">Optimize keeps the box count, hang height and position, and whether fills are on. It tries Focus / Wide order, fins, aim, toe-in, box trims and fill level, then sets the mains level so the seat average stays where it was.</p>
-      <button id="undoBtn" hidden>Undo optimize</button>
-    </section>
+        <label class="row">Optimize for <select id="optGoal" aria-label="Optimize goal"><option value="even" selected>Even level, front to back</option><option value="even_lean">Even, back rows 1–2 dB lower</option></select></label>
+        <p class="note" id="optNote">Optimize changes aim, splays, horizontal options, box trims and levels of every unlocked group. Positions, heights and box counts stay put. The seat average is held where it was.</p>
+      </section>
+      <section class="grp">
+        <h2>Speaker groups</h2>
+        <div id="groups" class="groups"></div>
+        <div class="addrow">
+          <select id="addKind" aria-label="Group to add">
+            <option value="line">Line array (L/R pair)</option>
+            <option value="point">Point sources (L/R pair)</option>
+            <option value="center">Center cluster</option>
+            <option value="fill">Front fills (stage front row)</option>
+            <option value="outfill">Out-fills (L/R pair)</option>
+            <option value="delay">Delay row</option>
+            <option value="sub">Subs (L/R pair)</option>
+            <option value="subrow">Sub array across the stage</option>
+          </select>
+          <button id="addGroup">Add</button>
+        </div>
+      </section>
+      <section class="grp">
+        <h2>Custom speaker</h2>
+        <details id="customBox"><summary>Add a speaker that isn't in the library</summary><div id="customForm" class="cform"></div></details>
+      </section>
+    </div>
 
-    <section class="grp">
-      <h2>Map <span class="seg" role="group" aria-label="Frequency band"><button id="bandMid" aria-pressed="true">Mid / high</button><button id="bandLF" aria-pressed="false">Subs</button></span></h2>
-      <p class="note" id="bandNote"></p>
-      <label class="row" id="lfRow" hidden>Sub frequency <output id="lfV"></output><input id="lf" type="range" min="40" max="100" step="1" value="63"></label>
-    </section>
+    <!-- ANALYZE -->
+    <div class="pane" id="pane-an" role="tabpanel" hidden>
+      <section class="grp">
+        <h2>Map</h2>
+        <div class="seg seg3" role="group" aria-label="Map"><button id="bandMid" aria-pressed="true">Mid / high</button><button id="bandLF" aria-pressed="false">Subs</button><button id="bandTime" aria-pressed="false">Timing</button></div>
+        <p class="note" id="bandNote"></p>
+        <label class="row" id="lfRow" hidden>Sub frequency <output id="lfV"></output><input id="lf" type="range" min="30" max="120" step="1" value="63"></label>
+        <label class="row" id="winRow" hidden>Compare sources within <output id="winV"></output><input id="win" type="range" min="3" max="20" step="1" value="10"></label>
+      </section>
+      <section class="grp">
+        <h2>Delays and fills</h2>
+        <label class="row">Precedence offset <output id="precV"></output><input id="prec" type="range" min="0" max="20" step="0.5" value="5"></label>
+        <p class="note">Auto delay times each fill or delay to the mains over the seats it covers, then adds this much so the sound still seems to come from the stage.</p>
+        <button id="alignAll">Auto-time all fills and delays</button>
+        <p class="note" id="alignNote"></p>
+        <label class="row">Flag seats more than <output id="thrV"></output><input id="thr" type="range" min="3" max="10" step="0.5" value="5"></label>
+        <button id="suggestBtn">Find seats that need a fill or delay</button>
+        <div id="suggList" class="sugg"></div>
+      </section>
+      <section class="grp">
+        <h2>Display</h2>
+        <label class="toggle"><input id="showSeats" type="checkbox" checked> Color the seats</label>
+        <label class="toggle"><input id="showLines" type="checkbox" checked> Horizontal coverage lines (−6 dB)</label>
+        <label class="toggle"><input id="showWalls" type="checkbox" checked> Walls</label>
+        <label class="row">Color range <select id="range" aria-label="Color range"><option value="12">12 dB</option><option value="18" selected>18 dB</option><option value="24">24 dB</option></select></label>
+      </section>
+      <section class="grp">
+        <h2>About the numbers</h2>
+        <p class="note">A quick prediction, not Soundvision, ArrayCalc or MAPP. Mid / high is a 1–4 kHz energy sum at seated ear height (3'-11"), direct sound only. Beam shapes come from the published coverage angles. Each line-array box gets the vertical opening of its splay, with its level scaled by how tightly the array is curved. Levels assume long-term pink noise 10 dB below each speaker's peak max SPL, plus the level sliders. Subs are summed with phase. No reflections, no box-to-box coupling, no air loss. Use it to compare layouts, then confirm in the manufacturer's software.</p>
+      </section>
+    </div>
 
-    <section class="grp">
-      <h2>A10i hangs (L / R mirrored)</h2>
-      <div class="boxes" id="boxes"></div>
-      <div class="addrm"><button id="addBox">Add box</button><button id="rmBox">Remove bottom box</button></div>
-      <p class="note">Focus boxes open the array 10° vertically, Wide boxes 30°. Horizontal width is set per box with the L-Fins: 70°, 110°, or 90° asymmetric (55° to one side, 35° to the other).</p>
-      <label class="row">Bottom of hang <output id="trimV"></output><input id="trim" type="range" min="12" max="24" step="0.5" value="18.5"></label>
-      <label class="row">Site angle (top box, down) <output id="siteV"></output><input id="site" type="range" min="-5" max="30" step="0.5" value="15"></label>
-      <label class="row">Toe-in toward center <output id="toeV"></output><input id="toe" type="range" min="0" max="30" step="0.5" value="10"></label>
-      <label class="row">Hang offset from center line <output id="offV"></output><input id="off" type="range" min="12" max="26" step="0.25" value="18.75"></label>
-      <label class="row">Mains level <output id="gainV"></output><input id="gain" type="range" min="-30" max="0" step="0.5" value="-14"></label>
-    </section>
-
-    <section class="grp">
-      <h2>X4i front fills <label class="toggle"><input id="ffOn" type="checkbox" checked> On</label></h2>
-      <label class="row">Count <select id="ffN" aria-label="Number of front fills"><option>4</option><option>5</option><option selected>6</option></select></label>
-      <label class="row">Fill level <output id="ffGainV"></output><input id="ffGain" type="range" min="-24" max="0" step="0.5" value="-10"></label>
-      <label class="row">Tilt up <output id="ffTiltV"></output><input id="ffTilt" type="range" min="0" max="25" step="1" value="8"></label>
-    </section>
-
-    <section class="grp">
-      <h2>KS21i subs <label class="toggle"><input id="subOn" type="checkbox" checked> On</label></h2>
-      <label class="row">Boxes per side (cardioid) <select id="subN" aria-label="Subs per side"><option>2</option><option selected>3</option><option>4</option></select></label>
-      <label class="row">Sub level <output id="subGainV"></output><input id="subGain" type="range" min="-36" max="0" step="0.5" value="-20"></label>
-      <p class="note">Subs only show on the Subs map. They are summed with phase, so you can see the L/R interference down the center aisle.</p>
-    </section>
-
-    <section class="grp">
-      <h2>Display</h2>
-      <label class="toggle"><input id="showSeats" type="checkbox" checked> Color the seats</label>
-      <label class="toggle"><input id="showLines" type="checkbox" checked> Horizontal coverage lines (−6 dB)</label>
-      <label class="toggle"><input id="showWalls" type="checkbox" checked> Walls</label>
-      <label class="row">Color range <select id="range" aria-label="Color range"><option value="12">12 dB</option><option value="18" selected>18 dB</option><option value="24">24 dB</option></select></label>
-      <p class="note" id="amps"></p>
-    </section>
-
-    <section class="grp">
-      <h2>About the numbers</h2>
-      <p class="note">This is a quick prediction, not Soundvision. Mid / high is a 1–4 kHz energy sum at seated ear height (3'-11"), direct sound only, with smooth beam shapes from the published coverage angles. Levels assume long-term pink noise at 10 dB below each box's peak max SPL (A10i Focus 140 dB, Wide 137 dB, X4i 116 dB, KS21i 138 dB) plus the level sliders. Real arrays couple between boxes, and the room adds reflections, so use this to compare layouts, then confirm in Soundvision.</p>
-    </section>
+    <!-- FILE -->
+    <div class="pane" id="pane-file" role="tabpanel" hidden>
+      <section class="grp">
+        <h2>Saved designs</h2>
+        <div class="actions"><button id="saveBtn" class="primary">Save in this browser</button><button id="newBtn">New</button></div>
+        <div id="saves" class="saves"></div>
+        <p class="note">Saves live in this browser only. Export a file to keep a copy or move it to another device.</p>
+      </section>
+      <section class="grp">
+        <h2>Share</h2>
+        <div class="actions"><button id="exportBtn">Export file (.json)</button><label class="btn" for="importFile">Import file</label></div>
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+        <p class="note" id="fileNote"></p>
+      </section>
+      <section class="grp">
+        <h2>Equipment list</h2>
+        <div id="bom" class="bom"></div>
+      </section>
+    </div>
   </aside>
 
-  <main class="view" aria-label="3D auditorium with SPL map">
+  <main class="view" aria-label="3D room with SPL map">
     <canvas id="gl"></canvas>
-    <div class="stats" aria-live="polite">
-      <div class="stat"><div class="k">Seat avg</div><div class="v" id="sAvg">–</div></div>
-      <div class="stat"><div class="k">Min / max</div><div class="v" id="sMM">–</div></div>
-      <div class="stat"><div class="k">Spread</div><div class="v" id="sSpread">–</div></div>
-      <div class="stat"><div class="k">Within ±3 dB</div><div class="v" id="sPct">–</div></div>
-      <div class="stat"><div class="k">Front 3 rows</div><div class="v" id="sFront">–</div></div>
-      <div class="stat"><div class="k">Back 3 rows</div><div class="v" id="sBack">–</div></div>
-    </div>
+    <div class="stats" aria-live="polite" id="stats"></div>
     <div class="cams" role="group" aria-label="Camera">
-      <button data-cam="3d">3D</button><button data-cam="top">Top</button><button data-cam="foh">From FOH</button><button data-cam="stage">From stage</button><button data-cam="side">Side section</button>
+      <button data-cam="3d">3D</button><button data-cam="top">Top</button><button data-cam="foh">From FOH</button><button data-cam="stage">From stage</button><button data-cam="side">Side</button>
     </div>
     <div class="legend">
       <div class="t" id="legT">dB SPL</div>
@@ -109,6 +138,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="js/rooms/rock-s14.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/speakers.js"></script>
+<script src="js/engine.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
