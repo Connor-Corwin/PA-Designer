@@ -570,6 +570,10 @@ $("exportBtn").onclick = () => {
   try { const a = el("a", { href: URL.createObjectURL(new Blob([txt], { type: "application/json" })), download: name }); document.body.append(a); a.click(); a.remove(); $("fileNote").textContent = `Exported ${name}.`; }
   catch (e) { $("fileNote").textContent = "This browser blocked the download."; }
 };
+$("copyBtn").onclick = () => {
+  const txt = JSON.stringify(P);
+  navigator.clipboard.writeText(txt).then(() => { $("fileNote").textContent = "Copied the design as text. Paste it into a .json file to keep it."; }, () => { $("fileNote").textContent = "Copying was blocked here. Use Export file instead."; });
+};
 $("importFile").onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try { const d = JSON.parse(await f.text()); if (!d.room || !d.groups) throw new Error("not a PA Designer file"); pushUndo("import"); P = normalize(d); applyProject(); $("fileNote").textContent = `Imported “${P.name}”.`; }
